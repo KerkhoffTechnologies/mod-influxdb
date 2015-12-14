@@ -111,14 +111,31 @@ class InfluxdbBroker(BaseModule):
                         value = float(value)
                     fields[mapping[1]] = value
 
+            # Create some extra tags for the type and instance in the e.name
+            computed_tags = tags.copy()
+            namesplit = e.name.split('_',3);
+            if len(namesplit)>2 :
+                #name_instance_type
+                computed_tags.update({'instance': namesplit[1]})
+                computed_tags.update({'type': namesplit[2]})
+            elif len(namesplit)>1 :
+                #name_type
+                computed_tags.update({'type': namesplit[1]})
+            if len(namesplit)>=1 :
+                logger.debug("[influxdb broker] Namesplit : %s" % namesplit)
+                logger.debug("[influxdb broker] Tags : %s" % computed_tags)
+                e.name = namesplit[0];
+
             if fields:
                 point = {
                     "measurement": 'metric_%s' % self.illegal_char.sub('_', e.name),
                     "time": timestamp,
                     "fields": fields,
-                    "tags": tags,
+                    "tags": computed_tags,
                 }
                 points.append(point)
+                logger.debug("[influxdb broker] Point Appended : %s" % str(point))
+
 
         return points
 
